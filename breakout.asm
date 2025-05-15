@@ -474,11 +474,10 @@ respond_to_a:
         lw $ra, 0($sp)
         addi $sp, $sp, 4
         
-        jr $ra
+        j input_end                  # Return to game loop instead of jr $ra
 
 # Function that updates PADDLE_ONE to shift to the RIGHT
 respond_to_d:
-    # TODO: Check for collision on left and right wall
     # Store current return address in stack
     addi $sp, $sp, -4
     sw $ra, 0($sp)
@@ -517,7 +516,7 @@ respond_to_d:
         lw $ra, 0($sp)
         addi $sp, $sp, 4
         
-        jr $ra
+        j input_end                  # Return to game loop instead of jr $ra
 
 # =============================================================================
 #                                    MOVEMENT
