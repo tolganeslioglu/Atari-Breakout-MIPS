@@ -46,6 +46,10 @@ PADDLE_ONE:
 PLAYER_COLOUR:
     .word 0x00fd9701
 
+# Game over image data (32x32 pixels, 4 bytes per pixel)
+GAMEOVER_IMAGE:
+    .include "gameover_image.asm"    # Include the raw image data here
+
 ##############################################################################
 # Mutable Data
 ##############################################################################
@@ -98,6 +102,7 @@ game_loop:
         beq $a0, 97, respond_to_a       # If a is pressed: move Paddle One left
 		beq $a0, 100, respond_to_d	    # If d is pressed: move Paddle One right
 		beq $a0, 112, respond_to_p	    # If p is pressed: pause game
+		beq $a0, 114, restart_game      # If r is pressed: restart game
 		j input_end               		# Runs if nothing passes; continue with game_loop
 
     # Continue with game loop
@@ -410,15 +415,6 @@ draw_game_over:
     jr $ra
 
 
-# ...existing code...
-        beq $a0, 0x71, respond_to_q     # If q is pressed: quit game
-        beq $a0, 97, respond_to_a       # If a is pressed: move Paddle One left
-        beq $a0, 100, respond_to_d	    # If d is pressed: move Paddle One right
-        beq $a0, 112, respond_to_p	    # If p is pressed: pause game
-        beq $a0, 114, restart_game      # If r is pressed: restart game
-        j input_end               		# Runs if nothing passes; continue with game_loop
-# ...existing code...
-
 # =============================================================================
 #                               RESTART FUNCTION
 # =============================================================================
@@ -456,12 +452,39 @@ restart_game:
 
 # Function to draw Game Over display
 draw_game_over_screen:
-    # Store current return address in stack (to go back to draw_scene)
+    # Store return address
     addi $sp, $sp, -4
     sw $ra, 0($sp)
     
-    jal fill_background
+    # Get display address
+    lw $t0, ADDR_DSPL
+    la $t1, GAMEOVER_IMAGE
+    
+    # Initialize counters
+    li $t2, 0          # pixel counter
+    li $t3, 1024       # total pixels (32x32)
+    
+draw_image_loop:
+    beq $t2, $t3, draw_image_done
+    
+    # Load color from image data
+    lw $t4, 0($t1)
+    
+    # Store color to display
+    sw $t4, 0($t0)
+    
+    # Update pointers and counter
+    addi $t0, $t0, 4
+    addi $t1, $t1, 4
+    addi $t2, $t2, 1
+    
+    j draw_image_loop
 
+draw_image_done:
+    # Restore return address
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    
 wait_restart:
     lw $t0, ADDR_KBRD
     lw $t8, 0($t0)
@@ -470,11 +493,9 @@ wait_restart:
 
 check_restart_key:
     lw $a0, 4($t0)
-    beq $a0, 114, restart_game   # 'r' tuşu ile restart
+    beq $a0, 114, restart_game   # 'r' key to restart
     j wait_restart
-
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
+    
     jr $ra
 
 
