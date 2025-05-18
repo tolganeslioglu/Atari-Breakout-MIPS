@@ -409,6 +409,81 @@ draw_game_over:
     addi $sp, $sp, 4
     jr $ra
 
+
+# ...existing code...
+        beq $a0, 0x71, respond_to_q     # If q is pressed: quit game
+        beq $a0, 97, respond_to_a       # If a is pressed: move Paddle One left
+        beq $a0, 100, respond_to_d	    # If d is pressed: move Paddle One right
+        beq $a0, 112, respond_to_p	    # If p is pressed: pause game
+        beq $a0, 114, restart_game      # If r is pressed: restart game
+        j input_end               		# Runs if nothing passes; continue with game_loop
+# ...existing code...
+
+# =============================================================================
+#                               RESTART FUNCTION
+# =============================================================================
+
+restart_game:
+    # Reset paddle position
+    li $t0, 52
+    la $t1, PADDLE_ONE_LEFT
+    sw $t0, 0($t1)
+    li $t0, 76
+    la $t1, PADDLE_ONE_RIGHT
+    sw $t0, 0($t1)
+    li $t0, 30
+    la $t1, PADDLE_ONE
+    sw $t0, 0($t1)
+    # Reset ball position
+    li $t0, 60
+    la $t1, BALL_X
+    sw $t0, 0($t1)
+    li $t0, 28
+    la $t1, BALL_Y
+    sw $t0, 0($t1)
+    # Reset ball direction
+    li $t0, 4
+    la $t1, VEC_X
+    sw $t0, 0($t1)
+    li $t0, 1
+    la $t1, VEC_Y
+    sw $t0, 0($t1)
+    # Redraw everything
+    jal draw_scene
+    j game_loop
+
+
+
+# Function to draw Game Over display
+draw_game_over_screen:
+    # Store current return address in stack (to go back to draw_scene)
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+    
+    jal fill_background
+
+wait_restart:
+    lw $t0, ADDR_KBRD
+    lw $t8, 0($t0)
+    beq $t8, 1, check_restart_key
+    j wait_restart
+
+check_restart_key:
+    lw $a0, 4($t0)
+    beq $a0, 114, restart_game   # 'r' tuşu ile restart
+    j wait_restart
+
+    lw $ra, 0($sp)
+    addi $sp, $sp, 4
+    jr $ra
+
+
+
+
+
+
+
+
 # =============================================================================
 #                               INPUT FUNCTIONS
 # =============================================================================
@@ -752,11 +827,11 @@ check_collision:
 
 # Game Over and Exit
 exit:
-    jal draw_game_over
+    jal draw_game_over_screen
     
     # Print game over message
     li $v0, 4
     syscall             
     
-    li $v0, 10          # terminate the program gracefully
-    syscall
+  #   li $v0, 10          # terminate the program gracefully
+   #   syscall
