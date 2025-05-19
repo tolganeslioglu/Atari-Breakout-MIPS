@@ -1,4 +1,4 @@
-################ CSC258H1F Fall 2022 Assembly Final Project ##################
+ ################ CSC258H1F Fall 2022 Assembly Final Project ##################
 # This file contains our implementation of Breakout.
 #
 # Student 1: Hanqi Zeng, 1008124245
@@ -49,6 +49,12 @@ PLAYER_COLOUR:
 # Game over image data (32x32 pixels, 4 bytes per pixel)
 GAMEOVER_IMAGE:
     .include "gameover_image.asm"    # Include the raw image data here
+
+SCORE:
+    .word 0
+
+SCORE_LABEL:
+    .asciiz "SCORE: "
 
 ##############################################################################
 # Mutable Data
@@ -485,6 +491,8 @@ draw_image_done:
     lw $ra, 0($sp)
     addi $sp, $sp, 4
     
+    jal draw_score
+
 wait_restart:
     lw $t0, ADDR_KBRD
     lw $t8, 0($t0)
@@ -668,11 +676,17 @@ move_ball:
 # Takes in the following:
 # - $a0 : position of the pixel within the brick being hit
 hit_brick:
-    # 1. Get position and background color
+    # 1. Increase SCORE by 1
+    la $t0, SCORE
+    lw $t1, 0($t0)
+    addi $t1, $t1, 1
+    sw $t1, 0($t0)
+    
+    # 2. Get position and background color
     add $t1, $zero, $a0         # Store location in $t1
     lw $t3, BACKGROUND_COLOUR
     
-    # 2. Check actual starting pixel of the brick
+    # 3. Check actual starting pixel of the brick
     addi $t5, $zero, 4
     div $t1, $t5
     mflo $t4
@@ -685,7 +699,7 @@ hit_brick:
         mult $t4, $t5
         mflo $t1
     
-    # 3. Erase the brick (replace with background color)
+    # 4. Erase the brick (replace with background color)
     erase_brick:
         sw $t3, 0($t1)          # Erase first half of brick
         sw $t3, 4($t1)          # Erase second half of brick
@@ -856,3 +870,29 @@ exit:
     
   #   li $v0, 10          # terminate the program gracefully
    #   syscall
+
+# ==================================================
+# draw_score
+# Displays the current score in the console output.
+# Writes "SCORE: X", where X is the current score.
+# Only supports single-digit scores (0–9).
+# ==================================================
+draw_score:
+    # Print the label "SCORE: "
+    li $v0, 4
+    la $a0, SCORE_LABEL
+    syscall
+
+    # Load score value from memory
+    la $t0, SCORE
+    lw $t1, 0($t0)
+
+    # Convert score to ASCII character ('0' = 48)
+    li $t2, 48
+    add $a0, $t1, $t2
+
+    # Print single digit score as character
+    li $v0, 11
+    syscall
+
+    jr $ra
