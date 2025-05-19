@@ -57,3 +57,7 @@ A MIPS-assembly implementation of the classic Atari Breakout game, designed to r
 
 * **Display base address**: `0x10008000` (`$gp`).
 * **Keyboard base address**: `0xffff0000`.
+* **Unit width in pixels**: 8 (Each pixel is 8x8 display units)
+* **Unit height in pixels**: 8 (Each pixel is 8x8 display units)
+* **Display width in pixels**: 256 (Total 32 units horizontally)
+* **Display height in pixels**: 256 (Total 32 units vertically)
