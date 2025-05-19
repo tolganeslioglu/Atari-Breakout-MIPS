@@ -1,84 +1,84 @@
- ################ CSC258H1F Fall 2022 Assembly Final Project ##################
-# This file contains our implementation of Breakout.
-#
-# Student 1: Hanqi Zeng, 1008124245
-# Student 2: Ramy Zhang, 1006443797
 ######################## Bitmap Display Configuration ########################
-# - Unit width in pixels:       8
-# - Unit height in pixels:      8
-# - Display width in pixels:    256
-# - Display height in pixels:   256
+# - Unit width in pixels:       8   # Each pixel is 8x8 display units
+# - Unit height in pixels:      8   # Each pixel is 8x8 display units
+# - Display width in pixels:    256 # Total 32 units horizontally
+# - Display height in pixels:   256 # Total 32 units vertically
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
 
     .data
 ##############################################################################
-# Immutable Data
+# Immutable Data - Constants and configuration values that don't change
 ##############################################################################
-# The address of the bitmap display. Don't forget to connect it!
+# Display and input addresses
 ADDR_DSPL:
-    .word 0x10008000
-# The address of the keyboard. Don't forget to connect it!
+    .word 0x10008000          # Base address for the bitmap display
 ADDR_KBRD:
-    .word 0xffff0000
-# Brick colours
+    .word 0xffff0000          # Base address for keyboard input
+
+# Color definitions
 BRICK_COLOURS:
-    .word 0x00f76a6a
-# Background colour
+    .word 0x00f76a6a         # Red color for bricks
 BACKGROUND_COLOUR:
-    .word 0x00000000
-# Border colour
+    .word 0x00000000         # Black background
 BORDER_COLOUR:
-    .word 0x00ffffff
-# The height of the top border
-BORDER_TOP_HEIGHT:
-	.word 5
-# The width of the side borders
-BORDER_SIDE_WIDTH:
-	.word 2
-# The width of the side borders (in bytes, because it's hard to multiply all the time)
-BORDER_SIDE_WIDTH_UNITS:
-	.word 8
-# Y-value of the first paddle's location
-PADDLE_ONE:
-    .word 30    # Changed from 28 to 30 (closer to bottom)
-# Colour of the paddles and ball
+    .word 0x00ffffff         # White border
 PLAYER_COLOUR:
-    .word 0x00fd9701
+    .word 0x00fd9701         # Orange color for paddle and ball
 
-# Game over image data (32x32 pixels, 4 bytes per pixel)
+# Border configurations
+BORDER_TOP_HEIGHT:
+    .word 5                  # Height of top border in units
+BORDER_SIDE_WIDTH:
+    .word 2                  # Width of side borders in units
+BORDER_SIDE_WIDTH_UNITS:
+    .word 8                  # Width of side borders in bytes (2 units * 4 bytes)
+
+# Paddle configuration
+PADDLE_ONE:
+    .word 30                 # Y-position of paddle (30 units from top)
+
+# Game over screen and scoring
 GAMEOVER_IMAGE:
-    .include "gameover_image.asm"    # Include the raw image data here
+    .include "gameover_image.asm"    # 32x32 game over screen image data
 
+    .align 2  # Ensure 4-byte alignment
 SCORE:
-    .word 0
+    .word 0                  # Current game score, initialized to 0
 
+    .align 2  # Ensure alignment for strings
 SCORE_LABEL:
-    .asciiz "SCORE: "
+    .asciiz "SCORE: "       # Label for score display
+    
+    .align 2  # Ensure alignment for next string
+NEWLINE:
+    .asciiz "\n"            # Newline character
 
+    .align 2  # Ensure alignment for next data item
 ##############################################################################
-# Mutable Data
+# Mutable Data - Variables that change during gameplay
 ##############################################################################
-# X-value of the positions of the right and left corners of the first paddle.
-# Note that these are in numbers of bytes (so out of 128, and not 32)
-# This will be updated as the paddle is moved
+# Paddle position (in bytes, where 128 bytes = 32 units)
 PADDLE_ONE_LEFT:
-	.word 52
+    .word 52                # Left edge X-position of paddle
 PADDLE_ONE_RIGHT:
-	.word 76
-# Ball's initial position, which will be updated as the ball moves
-# Note that X is in numbers of bytes (so out of 128, and not 32)
+    .word 76                # Right edge X-position of paddle
+
+# Ball position and movement
 BALL_X:
-	.word 60
-# Note that Y is in numbers of units (so out of 32)
+    .word 60                # Ball's X position in bytes
 BALL_Y: 
-	.word 28    # Changed from 26 to 28 (just above the paddle)
-# Vectors to help move the ball to the next position and bounce it.
-# VEC_X must be either of 4 or -4, and VEC_Y must be either of 1 or -1.
+    .word 28                # Ball's Y position in units (starts above paddle)
+
+# Ball movement vectors
 VEC_X:
-	.word 4
+    .word 4                 # Horizontal movement (4=right, -4=left)
 VEC_Y:
-	.word 1
+    .word 1                 # Vertical movement (1=down, -1=up)
+
+# Game configuration
+GAME_SPEED:
+    .word 80               # Base game speed in milliseconds (adjusts with score)
 ##############################################################################
 # Code
 ##############################################################################
@@ -105,8 +105,8 @@ game_loop:
         lw $a0, 4($t0)                  # Load second word from keyboard
         
         beq $a0, 0x71, respond_to_q     # If q is pressed: quit game
-        beq $a0, 97, respond_to_a       # If a is pressed: move Paddle One left
-		beq $a0, 100, respond_to_d	    # If d is pressed: move Paddle One right
+        beq $a0, 97, respond_to_a       # If a is pressed: move Paddle left
+		beq $a0, 100, respond_to_d	    # If d is pressed: move Paddle right
 		beq $a0, 112, respond_to_p	    # If p is pressed: pause game
 		beq $a0, 114, restart_game      # If r is pressed: restart game
 		j input_end               		# Runs if nothing passes; continue with game_loop
@@ -133,7 +133,7 @@ game_loop:
 	
 	# 4. Sleep
 	li $v0, 32
-	li $a0, 80        # Slowed down bc we're terrible at this game lol, optimal is 50
+	lw $a0, GAME_SPEED    # Use variable game speed instead of hardcoded value
 	syscall
 
     # 5. Go back to 1
@@ -408,24 +408,20 @@ draw_rect:
     end_outer_loop:			# the end of the rectangle drawing
         jr $ra              # return to the calling program
 
-# Function to draw Game Over display
-draw_game_over:
-    # Store current return address in stack (to go back to draw_scene)
-    addi $sp, $sp, -4
-    sw $ra, 0($sp)
-    
-    jal fill_background
-    
-    lw $ra, 0($sp)
-    addi $sp, $sp, 4
-    jr $ra
-
-
 # =============================================================================
 #                               RESTART FUNCTION
 # =============================================================================
 
 restart_game:
+    # Reset score
+    la $t1, SCORE
+    sw $zero, 0($t1)    # Set score back to 0
+    
+    # Reset game speed to initial value
+    la $t1, GAME_SPEED
+    li $t0, 80          # Initial speed value
+    sw $t0, 0($t1)
+    
     # Reset paddle position
     li $t0, 52
     la $t1, PADDLE_ONE_LEFT
@@ -503,21 +499,12 @@ check_restart_key:
     lw $a0, 4($t0)
     beq $a0, 114, restart_game   # 'r' key to restart
     j wait_restart
-    
-    jr $ra
-
-
-
-
-
-
-
 
 # =============================================================================
 #                               INPUT FUNCTIONS
 # =============================================================================
 
-# Pause the game :D
+# Pause the game
 respond_to_p:
 	lw $t0, ADDR_KBRD		# Load in the keyboard's address
 	lw $t9, 0($t0)		
@@ -676,12 +663,33 @@ move_ball:
 # Takes in the following:
 # - $a0 : position of the pixel within the brick being hit
 hit_brick:
+    # Store return address
+    addi $sp, $sp, -4
+    sw $ra, 0($sp)
+
     # 1. Increase SCORE by 1
     la $t0, SCORE
     lw $t1, 0($t0)
     addi $t1, $t1, 1
     sw $t1, 0($t0)
     
+    # Check if score is 5 to increase speed
+    beq $t1, 5, increase_speed
+    j continue_hit_brick
+
+increase_speed:
+    # Reduce GAME_SPEED by 25% (multiply by 0.75)
+    la $t0, GAME_SPEED
+    lw $t1, 0($t0)
+    # Multiply by 3/4 to get 75% of original speed
+    li $t2, 3              # Load constant 3 into register
+    mult $t1, $t2          # Multiply by 3 (both operands must be registers)
+    mflo $t1
+    srl $t1, $t1, 2       # Divide by 4
+    sw $t1, 0($t0)
+    j continue_hit_brick
+    
+continue_hit_brick:
     # 2. Get position and background color
     add $t1, $zero, $a0         # Store location in $t1
     lw $t3, BACKGROUND_COLOUR
@@ -864,12 +872,12 @@ check_collision:
 exit:
     jal draw_game_over_screen
     
-    # Print game over message
-    li $v0, 4
-    syscall             
-    
-  #   li $v0, 10          # terminate the program gracefully
-   #   syscall
+    # Print final score
+    jal draw_score
+
+    # Terminate the program gracefully
+    li $v0, 10
+    syscall
 
 # ==================================================
 # draw_score
@@ -893,6 +901,11 @@ draw_score:
 
     # Print single digit score as character
     li $v0, 11
+    syscall
+
+    # Print newline
+    li $v0, 4
+    la $a0, NEWLINE
     syscall
 
     jr $ra
