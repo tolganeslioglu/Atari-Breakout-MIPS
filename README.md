@@ -43,13 +43,13 @@ A MIPS-assembly implementation of the classic Atari Breakout game, designed to r
 
 ## Controls
 
-|  Key  | Action                         |   |
-| :---: | :----------------------------- | - |
-| **a** | Move paddle left               |   |
-| **d** | Move paddle right              |   |
-| **p** | Pause / Start game             |   |
-| **q** | Quit immediately (game over)   |   |
-| **r** | Restart after game over screen |   |
+|  Key  | Action                         |
+| :---: | :----------------------------- |
+| **a** | Move paddle left               |
+| **d** | Move paddle right              |
+| **p** | Pause / Start game             |
+| **q** | Quit immediately (game over)   |
+| **r** | Restart after game over screen |
 
 ---
 
