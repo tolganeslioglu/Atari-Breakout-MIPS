@@ -18,7 +18,7 @@ A MIPS-assembly implementation of the classic Atari Breakout game, designed to r
 
 * **Paddle control & ball physics**: Move a paddle horizontally to bounce a single-pixel ball around the playfield.
 * **Brick layout & collision detection**: Seven rows of bricks are laid out beneath a top border; collisions flip the ball’s X or Y vector and optionally erase bricks.
-* **Score tracking & dynamic speed**: Each brick hit increments the score; game speed automatically increases every 5 points.
+* **Score tracking & dynamic speed**: Each brick hit increments the score; game speed automatically increases after 5 points.
 * **Game over screen**: Upon losing, a 32×32 pixel “Game Over” image is displayed before allowing restart.
 
 ---
